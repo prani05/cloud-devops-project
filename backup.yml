@@ -1,0 +1,20 @@
+- name: Automated Database Backup
+  hosts: db_servers
+  become: yes
+  tasks:
+    - name: Create a backup directory
+      file:
+        path: /var/backups/db
+        state: directory
+        mode: '0755'
+
+    - name: Dump the database
+      command: >
+        mysqldump -u backup_user -p'backup_password' --all-databases > /var/backups/db/backup_{{ ansible_date_time.date }}.sql
+
+    - name: Compress the backup
+      command: >
+        tar -czvf /var/backups/db/backup_{{ ansible_date_time.date }}.tar.gz /var/backups/db/backup_{{ ansible_date_time.date }}.sql
+
+    - name: Remove old backups (older than 7 days)
+      command: find /var/backups/db -type f -name "*.tar.gz" -mtime +7 -delete
